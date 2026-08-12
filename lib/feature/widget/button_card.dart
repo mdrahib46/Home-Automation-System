@@ -35,9 +35,7 @@ class ButtonCard extends StatelessWidget {
                   size: 42,
                   color: isOn ? Colors.green : Colors.grey,
                 ),
-
                 const Spacer(),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -45,20 +43,16 @@ class ButtonCard extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 26,
-                          color: isOn ? Colors.green : Colors.grey
+                        fontWeight: FontWeight.w600,
+                        fontSize: 26,
+                        color: isOn ? Colors.green : Colors.grey,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-
                     ),
-
                     CircleAvatar(
                       radius: 8,
-                      backgroundColor: isOn
-                          ? Colors.green
-                          : Colors.grey,
+                      backgroundColor: isOn ? Colors.green : Colors.grey,
                     ),
                   ],
                 ),

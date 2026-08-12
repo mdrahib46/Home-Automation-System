@@ -1,13 +1,35 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 class GasAlertDialog extends StatelessWidget {
   const GasAlertDialog({
     super.key,
-    required this.onDismiss,
+    required this.roomRef,
   });
 
-  final VoidCallback onDismiss;
+  final DatabaseReference roomRef;
+
+  Future<void> _dismissAlert(BuildContext context) async {
+    try {
+      await roomRef.child('sensors').update({
+        'gas_alert': false,
+      });
+
+      await FirebaseDatabase.instance.ref('smart_home/alerts').update({
+        'active': false,
+      });
+
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint('Error dismissing gas alert: $e');
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,12 +37,7 @@ class GasAlertDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
       ),
-      contentPadding: const EdgeInsets.fromLTRB(
-        24,
-        28,
-        24,
-        20,
-      ),
+      contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -31,7 +48,7 @@ class GasAlertDialog extends StatelessWidget {
               color: Colors.orange.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child:  HugeIcon(
+            child: const HugeIcon(
               icon: HugeIcons.strokeRoundedGasStove,
               size: 48,
               color: Colors.orange,
@@ -105,7 +122,7 @@ class GasAlertDialog extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: onDismiss,
+              onPressed: () => _dismissAlert(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,

@@ -1,30 +1,24 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
-class FireAlertDialog extends StatelessWidget {
-  const FireAlertDialog({
+class SystemAlertDialog extends StatelessWidget {
+  const SystemAlertDialog({
     super.key,
-    required this.roomRef,
+    required this.alertType,
   });
 
-  final DatabaseReference roomRef;
+  final String alertType;
 
   Future<void> _dismissAlert(BuildContext context) async {
     try {
-      await roomRef.child('sensors').update({
-        'fire_detected': false,
-      });
-
       await FirebaseDatabase.instance.ref('smart_home/alerts').update({
         'active': false,
       });
-
       if (context.mounted) {
         Navigator.pop(context);
       }
     } catch (e) {
-      debugPrint('Error dismissing fire alert: $e');
+      debugPrint('Error dismissing system alert: $e');
       if (context.mounted) {
         Navigator.pop(context);
       }
@@ -48,73 +42,30 @@ class FireAlertDialog extends StatelessWidget {
               color: Colors.red.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const HugeIcon(
-              icon: HugeIcons.strokeRoundedFire,
+            child: const Icon(
+              Icons.warning_amber_rounded,
               size: 48,
               color: Colors.red,
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Fire / Smoke Detected!',
+          Text(
+            'Global System Alert!',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.bold,
-              color: Colors.red,
+              color: Colors.red.shade900,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Danger has been detected inside your home. '
-                'Please check immediately and take necessary action.',
+            'A critical issue has been detected: ${alertType.toUpperCase()}. Please check your home status immediately.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               height: 1.5,
               color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.red.withValues(alpha: 0.15),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  height: 10,
-                  width: 10,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'Smoke sensor is active',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Text(
-                  'ALERT',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade700,
-                  ),
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -124,7 +75,7 @@ class FireAlertDialog extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () => _dismissAlert(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.red.shade900,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -132,7 +83,7 @@ class FireAlertDialog extends StatelessWidget {
                 ),
               ),
               child: const Text(
-                'Dismiss Alert',
+                'Acknowledge & Dismiss',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,

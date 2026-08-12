@@ -1,6 +1,3 @@
-
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -64,7 +61,6 @@ class TemperatureCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Temperature Icon
           Container(
             height: 64,
             width: 64,
@@ -78,10 +74,7 @@ class TemperatureCard extends StatelessWidget {
               color: color,
             ),
           ),
-
           const SizedBox(width: 16),
-
-          // Temperature information
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,9 +87,7 @@ class TemperatureCard extends StatelessWidget {
                     color: Colors.grey.shade700,
                   ),
                 ),
-
                 const SizedBox(height: 3),
-
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -109,9 +100,7 @@ class TemperatureCard extends StatelessWidget {
                         height: 1,
                       ),
                     ),
-
                     const SizedBox(width: 3),
-
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2),
                       child: Text(
@@ -128,8 +117,6 @@ class TemperatureCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Status
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -153,9 +140,7 @@ class TemperatureCard extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                     ),
-
                     const SizedBox(width: 6),
-
                     Text(
                       temperatureStatus,
                       style: TextStyle(
@@ -167,9 +152,7 @@ class TemperatureCard extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Text(
                 'Indoor',
                 style: TextStyle(

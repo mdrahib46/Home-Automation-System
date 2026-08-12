@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -13,18 +16,114 @@ class BedroomScreen extends StatefulWidget {
 }
 
 class _BedroomScreenState extends State<BedroomScreen> {
+  final DatabaseReference _bedroomRef = FirebaseDatabase.instance.ref(
+    'smart_home/current_state/rooms/bedroom',
+  );
+
+  StreamSubscription<DatabaseEvent>? _bedroomSubscription;
+
+  double _temperature = 0.0;
+  double _humidity = 0.0;
+  bool _motionDetected = false;
+  bool _fireDetected = false;
+  bool _isFireAlertShowing = false;
+
+  bool _fanStatus = false;
+  int _fanSpeed = 0;
+  bool _lightStatus = false;
+  bool _acStatus = false;
+  int _acTemperature = 24;
+  bool _tvStatus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToBedroomData();
+  }
+
+  void _listenToBedroomData() {
+    _bedroomSubscription = _bedroomRef.onValue.listen((event) {
+      final data = event.snapshot.value;
+      if (data == null || data is! Map) return;
+
+      final Map<dynamic, dynamic> bedroomData = data;
+      final sensors = bedroomData['sensors'];
+
+      if (sensors is Map) {
+        _temperature = (sensors['temperature'] as num?)?.toDouble() ?? 0.0;
+        _humidity = (sensors['humidity'] as num?)?.toDouble() ?? 0.0;
+        _motionDetected = sensors['motion'] as bool? ?? false;
+        _fireDetected = sensors['fire_detected'] as bool? ?? false;
+      }
+
+      final devices = bedroomData['devices'];
+      if (devices is Map) {
+        final fan = devices['fan'];
+        if (fan is Map) {
+          _fanStatus = fan['status'] as bool? ?? false;
+          _fanSpeed = (fan['speed'] as num?)?.toInt() ?? 0;
+        }
+
+        final light = devices['light'];
+        if (light is Map) {
+          _lightStatus = light['status'] as bool? ?? false;
+        }
+
+        final ac = devices['ac'];
+        if (ac is Map) {
+          _acStatus = ac['status'] as bool? ?? false;
+          _acTemperature = (ac['set_temp'] as num?)?.toInt() ?? 24;
+        }
+
+        final tv = devices['tv'];
+        if (tv is Map) {
+          _tvStatus = tv['status'] as bool? ?? false;
+        }
+      }
+
+      if (mounted) setState(() {});
+
+      if (_fireDetected && !_isFireAlertShowing) {
+        _showFireAlertDialog();
+      }
+    });
+  }
+
   void _showFireAlertDialog() {
+    if (_isFireAlertShowing) return;
+    _isFireAlertShowing = true;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return FireAlertDialog(
-          onDismiss: () {
-            Navigator.pop(context);
-          },
+          roomRef: _bedroomRef,
         );
       },
-    );
+    ).then((_) {
+      _isFireAlertShowing = false;
+    });
+  }
+
+  Future<void> _setDeviceStatus({
+    required String device,
+    required bool status,
+  }) async {
+    try {
+      await _bedroomRef
+          .child('devices')
+          .child(device)
+          .update({'status': status});
+    } catch (e) {
+      debugPrint('Firebase update error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _bedroomSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -33,7 +132,7 @@ class _BedroomScreenState extends State<BedroomScreen> {
       appBar: AppBar(
         backgroundColor: Colors.teal,
         title: const Text(
-          'Bedroom',
+          'Smart Home',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 28,
@@ -41,53 +140,26 @@ class _BedroomScreenState extends State<BedroomScreen> {
           ),
         ),
         actions: [
-          // Dashboard button
           IconButton(
             onPressed: () {},
-            icon: const Icon(
-              Icons.dashboard_outlined,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.dashboard_outlined, color: Colors.white),
           ),
-
-          // Fire alert test button
           IconButton(
             onPressed: _showFireAlertDialog,
-            icon: const Icon(
-              Icons.local_fire_department_outlined,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.local_fire_department_outlined, color: Colors.white),
           ),
-
-          // More button
           IconButton(
             onPressed: () {},
-            icon: const Icon(
-              Icons.more_vert,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
           ),
         ],
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // =========================
-            // TEMPERATURE CARD
-            // =========================
-
-            const TemperatureCard(
-              temperature: 27.5,
-            ),
-
+            TemperatureCard(temperature: _temperature),
             const SizedBox(height: 20),
-
-            // =========================
-            // DEVICE GRID
-            // =========================
-
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -97,30 +169,27 @@ class _BedroomScreenState extends State<BedroomScreen> {
                 children: [
                   ButtonCard(
                     icon: HugeIcons.strokeRoundedFan01,
-                    onTap: () {},
+                    onTap: () => _setDeviceStatus(device: 'fan', status: !_fanStatus),
                     title: 'Fan',
-                    isOn: false,
+                    isOn: _fanStatus,
                   ),
-
                   ButtonCard(
                     icon: HugeIcons.strokeRoundedBulb,
-                    onTap: () {},
+                    onTap: () => _setDeviceStatus(device: 'light', status: !_lightStatus),
                     title: 'Light',
-                    isOn: true,
+                    isOn: _lightStatus,
                   ),
-
                   ButtonCard(
                     icon: HugeIcons.strokeRoundedSmartAc,
-                    onTap: () {},
+                    onTap: () => _setDeviceStatus(device: 'ac', status: !_acStatus),
                     title: 'AC',
-                    isOn: true,
+                    isOn: _acStatus,
                   ),
-
                   ButtonCard(
                     icon: HugeIcons.strokeRoundedModernTv,
-                    onTap: () {},
+                    onTap: () => _setDeviceStatus(device: 'tv', status: !_tvStatus),
                     title: 'TV',
-                    isOn: true,
+                    isOn: _tvStatus,
                   ),
                 ],
               ),
@@ -131,10 +200,3 @@ class _BedroomScreenState extends State<BedroomScreen> {
     );
   }
 }
-
-
-
-
-
-
-

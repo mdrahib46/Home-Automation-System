@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../widget/button_card.dart';
+import '../widget/fire_alert_dialog.dart';
 import '../widget/gas_alert_dialog.dart';
 import '../widget/temparature_card.dart';
 
@@ -12,33 +16,164 @@ class KitchenScreen extends StatefulWidget {
 }
 
 class _KitchenScreenState extends State<KitchenScreen> {
-  bool isHumanDetected = false;
-  
-  // These will be controlled by human detection
-  bool isFanOn = false;
-  bool isLightOn = false;
+  final DatabaseReference _kitchenRef = FirebaseDatabase.instance.ref(
+    'smart_home/current_state/rooms/kitchen',
+  );
 
-  void _toggleHumanDetection(bool value) {
-    setState(() {
-      isHumanDetected = value;
-      // Auto-control based on human detection
-      isFanOn = value;
-      isLightOn = value;
+  StreamSubscription<DatabaseEvent>? _kitchenSubscription;
+
+  double _temperature = 0.0;
+  bool _isHumanDetected = false;
+  bool _gasAlert = false;
+  bool _fireDetected = false;
+  bool _isGasAlertShowing = false;
+  bool _isFireAlertShowing = false;
+
+  Timer? _humanLeavingTimer;
+  bool? _lastHumanDetected;
+
+  bool _isFanOn = false;
+  bool _isLightOn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToKitchenData();
+  }
+
+  void _listenToKitchenData() {
+    _kitchenSubscription = _kitchenRef.onValue.listen((event) {
+      final data = event.snapshot.value;
+
+      if (data == null || data is! Map) {
+        return;
+      }
+
+      final Map<dynamic, dynamic> kitchenData = data;
+
+      final sensors = kitchenData['sensors'];
+      if (sensors is Map) {
+        _temperature = (sensors['temperature'] as num?)?.toDouble() ?? 0.0;
+        final bool newHumanDetected = sensors['human_detected'] as bool? ?? false;
+        _gasAlert = sensors['gas_alert'] as bool? ?? false;
+        _fireDetected = sensors['fire_detected'] as bool? ?? false;
+
+        if (_lastHumanDetected != newHumanDetected) {
+          _handleHumanDetectionAutomation(newHumanDetected);
+          _lastHumanDetected = newHumanDetected;
+        }
+        _isHumanDetected = newHumanDetected;
+      }
+
+      final devices = kitchenData['devices'];
+      if (devices is Map) {
+        _isFanOn = (devices['fan'] as Map?)?['status'] as bool? ?? false;
+        _isLightOn = (devices['light'] as Map?)?['status'] as bool? ?? false;
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+
+      if (_gasAlert && !_isGasAlertShowing) {
+        _showGasAlertDialog();
+      }
+
+      if (_fireDetected && !_isFireAlertShowing) {
+        _showFireAlertDialog();
+      }
     });
   }
 
+  void _handleHumanDetectionAutomation(bool detected) {
+    if (detected) {
+      _humanLeavingTimer?.cancel();
+      _humanLeavingTimer = null;
+      _autoUpdateDevices(true);
+    } else {
+      _humanLeavingTimer?.cancel();
+      _humanLeavingTimer = Timer(const Duration(seconds: 10), () {
+        _autoUpdateDevices(false);
+      });
+    }
+  }
+
+  Future<void> _autoUpdateDevices(bool status) async {
+    try {
+      await _kitchenRef.update({
+        'devices/fan/status': status,
+        'devices/light/status': status,
+      });
+    } catch (e) {
+      debugPrint('Firebase automation error: $e');
+    }
+  }
+
   void _showGasAlertDialog() {
+    if (_isGasAlertShowing) return;
+    _isGasAlertShowing = true;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return GasAlertDialog(
-          onDismiss: () {
-            Navigator.pop(context);
-          },
+          roomRef: _kitchenRef,
         );
       },
-    );
+    ).then((_) {
+      _isGasAlertShowing = false;
+    });
+  }
+
+  void _showFireAlertDialog() {
+    if (_isFireAlertShowing) return;
+    _isFireAlertShowing = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return FireAlertDialog(
+          roomRef: _kitchenRef,
+        );
+      },
+    ).then((_) {
+      _isFireAlertShowing = false;
+    });
+  }
+
+  Future<void> _setDeviceStatus({
+    required String device,
+    required bool status,
+  }) async {
+    try {
+      await _kitchenRef
+          .child('devices')
+          .child(device)
+          .update({
+        'status': status,
+      });
+    } catch (e) {
+      debugPrint('Firebase update error: $e');
+    }
+  }
+
+  Future<void> _toggleHumanDetectionSimulator(bool value) async {
+    try {
+      await _kitchenRef.update({
+        'sensors/human_detected': value,
+      });
+    } catch (e) {
+      debugPrint('Firebase update error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _humanLeavingTimer?.cancel();
+    _kitchenSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -47,7 +182,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
       appBar: AppBar(
         backgroundColor: Colors.teal,
         title: const Text(
-          'Kitchen',
+          'Smart Home',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 28,
@@ -55,6 +190,13 @@ class _KitchenScreenState extends State<KitchenScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            onPressed: _showFireAlertDialog,
+            icon: const Icon(
+              Icons.local_fire_department_outlined,
+              color: Colors.white,
+            ),
+          ),
           IconButton(
             onPressed: _showGasAlertDialog,
             icon: const Icon(
@@ -75,28 +217,26 @@ class _KitchenScreenState extends State<KitchenScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const TemperatureCard(
-              temperature: 29.0,
+            TemperatureCard(
+              temperature: _temperature,
             ),
             const SizedBox(height: 20),
-            
-            // Human Detection Status Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isHumanDetected 
+                color: _isHumanDetected 
                     ? Colors.orange.withValues(alpha: 0.1) 
                     : Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isHumanDetected ? Colors.orange : Colors.blue,
+                  color: _isHumanDetected ? Colors.orange : Colors.blue,
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
-                    isHumanDetected ? Icons.person : Icons.person_off,
-                    color: isHumanDetected ? Colors.orange : Colors.blue,
+                    _isHumanDetected ? Icons.person : Icons.person_off,
+                    color: _isHumanDetected ? Colors.orange : Colors.blue,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -104,15 +244,15 @@ class _KitchenScreenState extends State<KitchenScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isHumanDetected ? 'Human Detected' : 'No Human',
+                          _isHumanDetected ? 'Human Detected' : 'No Human',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: isHumanDetected ? Colors.orange.shade900 : Colors.blue.shade900,
+                            color: _isHumanDetected ? Colors.orange.shade900 : Colors.blue.shade900,
                           ),
                         ),
                         Text(
-                          isHumanDetected 
+                          _isHumanDetected 
                               ? 'Fan and Light are ON' 
                               : 'Devices are OFF',
                           style: const TextStyle(fontSize: 12),
@@ -121,16 +261,14 @@ class _KitchenScreenState extends State<KitchenScreen> {
                     ),
                   ),
                   Switch(
-                    value: isHumanDetected,
-                    onChanged: _toggleHumanDetection,
+                    value: _isHumanDetected,
+                    onChanged: _toggleHumanDetectionSimulator,
                     activeColor: Colors.orange,
                   ),
                 ],
               ),
             ),
-            
             const SizedBox(height: 20),
-            
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -141,22 +279,18 @@ class _KitchenScreenState extends State<KitchenScreen> {
                   ButtonCard(
                     icon: HugeIcons.strokeRoundedFan01,
                     onTap: () {
-                      setState(() {
-                        isFanOn = !isFanOn;
-                      });
+                      _setDeviceStatus(device: 'fan', status: !_isFanOn);
                     },
-                    title: 'Fan',
-                    isOn: isFanOn,
+                    title: 'Kit. Fan',
+                    isOn: _isFanOn,
                   ),
                   ButtonCard(
                     icon: HugeIcons.strokeRoundedBulb,
                     onTap: () {
-                      setState(() {
-                        isLightOn = !isLightOn;
-                      });
+                      _setDeviceStatus(device: 'light', status: !_isLightOn);
                     },
-                    title: 'Light',
-                    isOn: isLightOn,
+                    title: 'Kit. Light',
+                    isOn: _isLightOn,
                   ),
                 ],
               ),
