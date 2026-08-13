@@ -19,8 +19,12 @@ class _BedroomScreenState extends State<BedroomScreen> {
   final DatabaseReference _bedroomRef = FirebaseDatabase.instance.ref(
     'smart_home/current_state/rooms/bedroom',
   );
+  final DatabaseReference _globalRef = FirebaseDatabase.instance.ref(
+    'smart_home/current_state/global/sensors',
+  );
 
   StreamSubscription<DatabaseEvent>? _bedroomSubscription;
+  StreamSubscription<DatabaseEvent>? _globalSubscription;
 
   double _temperature = 0.0;
   double _humidity = 0.0;
@@ -39,6 +43,20 @@ class _BedroomScreenState extends State<BedroomScreen> {
   void initState() {
     super.initState();
     _listenToBedroomData();
+    _listenToGlobalData();
+  }
+
+  void _listenToGlobalData() {
+    _globalSubscription = _globalRef.onValue.listen((event) {
+      final data = event.snapshot.value;
+      if (data == null || data is! Map) return;
+
+      final Map<dynamic, dynamic> globalData = data;
+      _temperature = (globalData['temperature'] as num?)?.toDouble() ?? 0.0;
+      _humidity = (globalData['humidity'] as num?)?.toDouble() ?? 0.0;
+
+      if (mounted) setState(() {});
+    });
   }
 
   void _listenToBedroomData() {
@@ -50,8 +68,7 @@ class _BedroomScreenState extends State<BedroomScreen> {
       final sensors = bedroomData['sensors'];
 
       if (sensors is Map) {
-        _temperature = (sensors['temperature'] as num?)?.toDouble() ?? 0.0;
-        _humidity = (sensors['humidity'] as num?)?.toDouble() ?? 0.0;
+        // Temperature and Humidity now come from Global path
         _motionDetected = sensors['motion'] as bool? ?? false;
         _fireDetected = sensors['fire_detected'] as bool? ?? false;
       }
@@ -123,6 +140,7 @@ class _BedroomScreenState extends State<BedroomScreen> {
   @override
   void dispose() {
     _bedroomSubscription?.cancel();
+    _globalSubscription?.cancel();
     super.dispose();
   }
 

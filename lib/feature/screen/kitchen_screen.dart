@@ -19,8 +19,12 @@ class _KitchenScreenState extends State<KitchenScreen> {
   final DatabaseReference _kitchenRef = FirebaseDatabase.instance.ref(
     'smart_home/current_state/rooms/kitchen',
   );
+  final DatabaseReference _globalRef = FirebaseDatabase.instance.ref(
+    'smart_home/current_state/global/sensors',
+  );
 
   StreamSubscription<DatabaseEvent>? _kitchenSubscription;
+  StreamSubscription<DatabaseEvent>? _globalSubscription;
 
   double _temperature = 0.0;
   bool _isHumanDetected = false;
@@ -39,6 +43,19 @@ class _KitchenScreenState extends State<KitchenScreen> {
   void initState() {
     super.initState();
     _listenToKitchenData();
+    _listenToGlobalData();
+  }
+
+  void _listenToGlobalData() {
+    _globalSubscription = _globalRef.onValue.listen((event) {
+      final data = event.snapshot.value;
+      if (data == null || data is! Map) return;
+
+      final Map<dynamic, dynamic> globalData = data;
+      _temperature = (globalData['temperature'] as num?)?.toDouble() ?? 0.0;
+
+      if (mounted) setState(() {});
+    });
   }
 
   void _listenToKitchenData() {
@@ -53,7 +70,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
 
       final sensors = kitchenData['sensors'];
       if (sensors is Map) {
-        _temperature = (sensors['temperature'] as num?)?.toDouble() ?? 0.0;
+        // Temperature now comes from Global path
         final bool newHumanDetected = sensors['human_detected'] as bool? ?? false;
         _gasAlert = sensors['gas_alert'] as bool? ?? false;
         _fireDetected = sensors['fire_detected'] as bool? ?? false;
@@ -173,6 +190,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
   void dispose() {
     _humanLeavingTimer?.cancel();
     _kitchenSubscription?.cancel();
+    _globalSubscription?.cancel();
     super.dispose();
   }
 
