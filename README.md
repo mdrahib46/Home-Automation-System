@@ -30,8 +30,8 @@ A comprehensive IoT-based smart home automation system featuring a Flutter mobil
 
 ### Real-time Monitoring
 <p align="center">
-  <img src="assets/images/Simulator%20Screenshot%20-%20iPhone%2017%20-%202026-08-20%20at%2022.34.26.png" width="200" alt="Alert Dialog" />
   <img src="assets/images/Screenshot_20260820_222833.png" width="200" alt="Bedroom Screen" />
+  <img src="assets/images/Simulator%20Screenshot%20-%20iPhone%2017%20-%202026-08-20%20at%2022.34.26.png" width="200" alt="Alert Dialog" />
   <img src="assets/images/Screenshot_20260820_222848.png" width="200" alt="Living Room Screen" />
   <img src="assets/images/Screenshot_20260820_222907.png" width="200" alt="Kitchen Screen" />
 </p>
