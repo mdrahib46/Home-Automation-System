@@ -44,7 +44,7 @@ class ButtonCard extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: 26,
+                        fontSize: 24,
                         color: isOn ? Colors.green : Colors.grey,
                       ),
                       maxLines: 2,

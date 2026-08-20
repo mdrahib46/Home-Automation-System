@@ -183,7 +183,7 @@ class _LivingRoomScreenState extends State<LivingRoomScreen> {
                   ButtonCard(
                     icon: HugeIcons.strokeRoundedModernTv,
                     onTap: () => _setDeviceStatus(device: 'tv', status: !_tvStatus),
-                    title: 'Smart TV',
+                    title: 'TV',
                     isOn: _tvStatus,
                   ),
                 ],

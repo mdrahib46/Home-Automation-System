@@ -18,6 +18,26 @@ A comprehensive IoT-based smart home automation system featuring a Flutter mobil
 
 ---
 
+## 📸 Screenshots
+
+### Mobile Application
+<p align="center">
+  <img src="assets/images/Simulator%20Screenshot%20-%20iPhone%2017%20-%202026-08-20%20at%2022.30.56.png" width="200" alt="App Home Screen" />
+  <img src="assets/images/Simulator%20Screenshot%20-%20iPhone%2017%20-%202026-08-20%20at%2022.31.03.png" width="200" alt="Room Control Screen" />
+  <img src="assets/images/Simulator%20Screenshot%20-%20iPhone%2017%20-%202026-08-20%20at%2022.34.11.png" width="200" alt="Authentication Screen" />
+  <img src="assets/images/Simulator%20Screenshot%20-%20iPhone%2017%20-%202026-08-20%20at%2022.34.26.png" width="200" alt="Alert Dialog" />
+</p>
+
+### Real-time Monitoring
+<p align="center">
+  <img src="assets/images/Screenshot_20260820_222129.png" width="200" alt="Dashboard Overview" />
+  <img src="assets/images/Screenshot_20260820_222833.png" width="200" alt="Bedroom Screen" />
+  <img src="assets/images/Screenshot_20260820_222848.png" width="200" alt="Living Room Screen" />
+  <img src="assets/images/Screenshot_20260820_222907.png" width="200" alt="Kitchen Screen" />
+</p>
+
+---
+
 ## 🛠 Hardware Components
 
 | Component | Pin (ESP32) | Function |
